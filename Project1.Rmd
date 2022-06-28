@@ -1,0 +1,147 @@
+---
+title: "Project1"
+author: "Amit Kumar"
+date: "6/13/2022"
+output: word_document
+---
+
+```{r loadPackage}
+
+library(tidyverse)
+library(tidymodels)
+library(GGally) 
+library(ggcorrplot) 
+library(gridExtra) 
+library(splines)
+library(car) 
+library(glmnet)
+library(lmtest)
+library(leaps) 
+library(mice) 
+library(VIM) 
+library(naniar)
+library(skimr) 
+library(UpSetR) 
+
+```
+
+```{r dataPrep}
+
+home <- read_csv("ames_student.csv")
+
+str(home) 
+summary(home) 
+glimpse(home)
+view(home)
+skim(home)
+
+home = home %>% mutate_if(is.character, as_factor) 
+
+
+
+```
+
+
+```{r coranalysis}
+
+
+ggpairs(home, columns = c("MS_SubClass", "MS_Zoning", "Lot_Frontage", "Lot_Area","Above_Median"),cardinality_threshold = 51)
+ggpairs(home, columns = c("Street", "Alley", "Lot_Shape", "Land_Contour","Above_Median"))
+ggpairs(home, columns = c("Utilities", "Lot_Config", "Land_Slope", "Neighborhood","Above_Median"),cardinality_threshold = 51)
+ggpairs(home, columns = c("Condition_1", "Condition_2", "Bldg_Type", "House_Style","Above_Median"))
+ggpairs(home, columns = c("Overall_Qual", "Overall_Cond", "Year_Built", "Year_Remod_Add","Above_Median"))
+ggpairs(home, columns = c("Roof_Style", "Roof_Matl", "Exterior_1st", "Exterior_2nd","Above_Median"),cardinality_threshold = 51)
+ggpairs(home, columns = c("Mas_Vnr_Type", "Mas_Vnr_Area", "Exter_Qual", "Exter_Cond","Above_Median"))
+ggpairs(home, columns = c("Foundation", "Bsmt_Qual", "Bsmt_Cond", "Bsmt_Exposure","Above_Median"))
+ggpairs(home, columns = c("BsmtFin_Type_1", "BsmtFin_SF_1", "BsmtFin_Type_2", "BsmtFin_SF_2","Above_Median"))
+ggpairs(home, columns = c("Bsmt_Unf_SF", "Total_Bsmt_SF", "Heating", "Heating_QC","Above_Median"))
+ggpairs(home, columns = c("Central_Air", "Electrical", "First_Flr_SF", "Second_Flr_SF","Above_Median"))
+ggpairs(home, columns = c("Low_Qual_Fin_SF", "Gr_Liv_Area", "Bsmt_Full_Bath", "Bsmt_Half_Bath","Above_Median"))
+ggpairs(home, columns = c("Full_Bath", "Half_Bath", "Bedroom_AbvGr", "Kitchen_AbvGr","Above_Median"))
+ggpairs(home, columns = c("Kitchen_Qual", "TotRms_AbvGrd", "Functional", "Fireplaces","Above_Median"))
+ggpairs(home, columns = c("Fireplace_Qu", "Garage_Type", "Garage_Finish", "Garage_Cars","Above_Median"))
+ggpairs(home, columns = c("Garage_Area", "Garage_Qual", "Garage_Cond", "Paved_Drive","Above_Median"))
+ggpairs(home, columns = c("Wood_Deck_SF", "Open_Porch_SF", "Enclosed_Porch", "Three_season_porch","Above_Median"),cardinality_threshold = 251)
+ggpairs(home, columns = c("Screen_Porch", "Pool_Area", "Pool_QC", "Fence","Above_Median"),cardinality_threshold = 251)
+ggpairs(home, columns = c("Misc_Feature", "Misc_Val", "Mo_Sold", "Year_Sold","Above_Median"))
+ggpairs(home, columns = c("Sale_Type", "Sale_Condition", "Longitude", "Latitude","Above_Median"))
+
+
+
+```
+
+
+```{r dataExplore}
+
+
+sel_home <- home %>% dplyr::select("Neighborhood","Overall_Qual","Year_Built","Year_Remod_Add","BsmtFin_Type_1","Heating_QC","Gr_Liv_Area","Full_Bath","TotRms_AbvGrd","Fireplaces","Garage_Finish","Garage_Cars","Garage_Area","Above_Median"
+)
+
+```
+
+
+```{r datavisual1}
+
+p1 = ggplot(sel_home, aes(x = Garage_Finish, fill = Above_Median)) + geom_bar(position = "fill") + theme(axis.text.x = element_text(angle = 90, size = 8, vjust = 0.5, hjust=1))
+p2 = ggplot(sel_home, aes(x = Overall_Qual, fill = Above_Median)) + geom_bar(position = "fill") + theme(axis.text.x = element_text(angle = 90, size = 8, vjust = 0.5, hjust=1))
+p3 = ggplot(sel_home, aes(x = BsmtFin_Type_1, fill = Above_Median)) + geom_bar(position = "fill") + theme(axis.text.x = element_text(angle = 90, size = 8, vjust = 0.5, hjust=1))
+p4 = ggplot(sel_home, aes(x = Heating_QC, fill = Above_Median)) + geom_bar(position = "fill") + theme(axis.text.x = element_text(angle = 90, size = 8, vjust = 0.5, hjust=1))
+
+grid.arrange(p1,p2,p3,p4, ncol = 2, heights=c(4,4))
+
+```
+
+
+```{r datavisua12}
+
+ggplot(sel_home, aes(x = Neighborhood, fill = Above_Median)) + geom_bar(position = "fill") + theme(axis.text.x = element_text(angle = 90, size = 8, vjust = 0.5, hjust=1))
+
+
+
+
+```
+
+
+
+```{r datavisua13}
+
+p1 <- ggplot(sel_home,aes(x=Above_Median,y=Year_Built)) + geom_boxplot() + geom_jitter(alpha = 0.15) + theme_bw() 
+
+p2 <- ggplot(sel_home,aes(x=Above_Median,y=Year_Remod_Add)) + geom_boxplot() + geom_jitter(alpha = 0.15) + theme_bw() 
+
+
+p3 <- ggplot(sel_home,aes(x=Above_Median,y=Garage_Cars)) + geom_boxplot() + geom_jitter(alpha = 0.15) + theme_bw()
+
+
+p4 <- ggplot(sel_home,aes(x=Above_Median,y=Garage_Area)) + geom_boxplot() + geom_jitter(alpha = 0.15) + theme_bw() 
+
+
+grid.arrange(p1,p2, p3,p4, ncol = 2)
+
+
+
+
+```
+
+
+```{r datavisua14}
+
+p1 <- ggplot(sel_home,aes(x=Above_Median,y=Gr_Liv_Area)) + geom_boxplot() + geom_jitter(alpha = 0.15) + theme_bw()
+
+
+p2 <- ggplot(sel_home,aes(x=Above_Median,y=Full_Bath)) + geom_boxplot() + geom_jitter(alpha = 0.15) + theme_bw() 
+
+p3 <- ggplot(sel_home,aes(x=Above_Median,y=TotRms_AbvGrd)) + geom_boxplot() + geom_jitter(alpha = 0.15) + theme_bw() 
+
+p4 <- ggplot(sel_home,aes(x=Above_Median,y=Fireplaces)) + geom_boxplot() + geom_jitter(alpha = 0.15) + theme_bw() 
+
+grid.arrange(p1,p2,p3,p4, ncol = 2)
+
+
+
+
+```
+
+
+
+
